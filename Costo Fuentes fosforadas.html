@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparador de Fuentes Fosforadas — SOS Agro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green:    #2d7d46;
+    --green-lt: #3a9a58;
+    --green-bg: #edf7f0;
+    --teal:     #1a6b6b;
+    --dark:     #1a2420;
+    --mid:      #3d5249;
+    --muted:    #7a9488;
+    --border:   #c8dcd2;
+    --bg:       #f4f8f5;
+    --card:     #ffffff;
+    --red:      #c0392b;
+    --orange:   #d68910;
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--dark); min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--dark);
+    color: #fff;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    border-bottom: 3px solid var(--green);
+  }
+  .logo-area { display: flex; align-items: center; gap: 14px; }
+  .logo-box {
+    background: var(--green);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 9px;
+    letter-spacing: 1px;
+    border-radius: 3px;
+  }
+  .app-title { font-size: 15px; font-weight: 500; opacity: .9; letter-spacing: .3px; }
+  .subtitle { font-size: 11px; opacity: .5; font-family: var(--mono); }
+
+  /* MAIN LAYOUT */
+  .wrapper { max-width: 1260px; margin: 0 auto; padding: 24px 20px 48px; }
+
+  /* PANELS */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .panel-header {
+    background: var(--dark);
+    color: #fff;
+    padding: 10px 18px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-header .dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; }
+  .panel-body { padding: 18px; }
+
+  /* CONFIG GRID */
+  .config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    align-items: end;
+  }
+  .field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .field input[type=number] {
+    width: 100%;
+    padding: 8px 11px;
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--dark);
+    background: #fafcfb;
+    transition: border-color .15s;
+  }
+  .field input[type=number]:focus { outline: none; border-color: var(--green); }
+
+  .toggle-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  .toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    background: #fafcfb;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--mid);
+    transition: all .15s;
+    user-select: none;
+  }
+  .toggle-btn.active { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+  .toggle-btn .icon { font-size: 15px; }
+
+  /* FERTILIZER TABLE */
+  .fert-table-wrap { overflow-x: auto; }
+  table.fert-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .fert-table thead th {
+    background: #f0f5f2;
+    color: var(--mid);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    padding: 9px 12px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  .fert-table thead th:first-child { text-align: left; }
+  .fert-table thead th:not(:first-child) { text-align: center; }
+  .fert-table tbody tr { border-bottom: 1px solid #e8f0eb; transition: background .1s; }
+  .fert-table tbody tr:hover { background: #fafdf9; }
+  .fert-table tbody tr.inactive { opacity: .45; }
+  .fert-table td { padding: 8px 12px; vertical-align: middle; }
+  .fert-table td:not(:first-child):not(:last-child) {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--mid);
+  }
+  .fert-name { font-weight: 600; color: var(--dark); font-size: 13px; }
+  .fert-name.ref-tag::after {
+    content: 'REF';
+    font-size: 9px;
+    background: var(--green);
+    color: #fff;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 7px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    vertical-align: middle;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-n { background: #e8f4fd; color: #1a6fa3; }
+  .badge-s { background: #fef9e7; color: #9a7d0a; }
+  .badge-ca { background: #fdf2e9; color: #a04000; }
+  .badge-zn { background: #f4ecf7; color: #6c3483; }
+  .badge-zero { color: #bbb; }
+
+  .price-input {
+    width: 90px;
+    padding: 5px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: right;
+    background: #fafcfb;
+    color: var(--dark);
+    display: block;
+    margin: 0 auto;
+  }
+  .price-input:focus { outline: none; border-color: var(--green); }
+  .price-input.no-price { border-color: #f0c0bb; background: #fff8f7; color: var(--red); }
+  .price-input.no-price::placeholder { color: #e8a8a0; }
+
+  .chk-cell { text-align: center; }
+  .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #ccc; border-radius: 20px; transition: .2s;
+  }
+  .slider:before {
+    content: '';
+    position: absolute;
+    height: 14px; width: 14px;
+    left: 3px; bottom: 3px;
+    background: white; border-radius: 50%; transition: .2s;
+  }
+  input:checked + .slider { background: var(--green); }
+  input:checked + .slider:before { transform: translateX(16px); }
+
+  /* CHART */
+  .chart-container { position: relative; height: 420px; }
+
+  /* RESULTS TABLE */
+  table.results-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .results-table thead th {
+    background: var(--dark);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    padding: 10px 12px;
+    white-space: nowrap;
+  }
+  .results-table thead th:first-child { text-align: left; border-radius: 0; }
+  .results-table thead th:not(:first-child) { text-align: right; }
+  .results-table tbody tr { border-bottom: 1px solid #e8f0eb; }
+  .results-table tbody tr:hover { background: #f5fbf7; }
+  .results-table td { padding: 9px 12px; vertical-align: middle; }
+  .results-table td:not(:first-child) { text-align: right; font-family: var(--mono); font-size: 12px; }
+  .cost-cheaper { color: var(--green); font-weight: 600; }
+  .cost-equal  { color: var(--mid); font-weight: 600; }
+  .cost-pricier { color: var(--red); font-weight: 600; }
+  .diff-positive { color: var(--red); }
+  .diff-negative { color: var(--green); }
+  .diff-zero { color: var(--muted); }
+  .no-data { color: #bbb; font-style: italic; }
+
+  .ref-row td { background: var(--green-bg) !important; }
+  .rank-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    font-size: 10px; font-weight: 700; font-family: var(--mono);
+    background: #e8f0eb; color: var(--mid); margin-right: 8px;
+  }
+  .rank-badge.rank-1 { background: var(--green); color: #fff; }
+  .rank-badge.rank-2 { background: #4aab68; color: #fff; }
+  .rank-badge.rank-3 { background: #72bf88; color: #fff; }
+
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .scard {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 14px 16px;
+    border-left: 4px solid var(--green);
+  }
+  .scard.orange { border-left-color: var(--orange); }
+  .scard.red { border-left-color: var(--red); }
+  .scard-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 4px; }
+  .scard-value { font-family: var(--mono); font-size: 22px; font-weight: 600; color: var(--dark); }
+  .scard-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .mode-label {
+    display: inline-block;
+    background: var(--green-bg);
+    color: var(--green);
+    border: 1px solid #a8d9bc;
+    border-radius: 4px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    margin-top: 12px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <div class="logo-box">SOS<br>AGRO</div>
+    <div>
+      <div class="app-title">Comparador de Fuentes Fosforadas</div>
+      <div class="subtitle">Igualación por kg P aportados · Referencia 100 kg MAP</div>
+    </div>
+  </div>
+  <div id="modeDisplay"></div>
+</header>
+
+<div class="wrapper">
+
+  <!-- PARÁMETROS -->
+  <div class="panel">
+    <div class="panel-header"><span class="dot"></span>Parámetros de cálculo</div>
+    <div class="panel-body">
+      <div class="config-grid">
+        <div class="field">
+          <label>Referencia (kg MAP)</label>
+          <input type="number" id="refKg" value="100" min="1" max="500" step="1">
+        </div>
+        <div class="field">
+          <label>Precio Urea (U$S/tn)</label>
+          <input type="number" id="ureaPrice" value="780" min="0" step="10">
+        </div>
+        <div class="field">
+          <label>Precio Azufertil (U$S/tn)</label>
+          <input type="number" id="azufertilPrice" value="320" min="0" step="10">
+        </div>
+        <div class="field">
+          <label>Créditos aplicados</label>
+          <div class="toggle-group">
+            <div class="toggle-btn active" id="btnN" onclick="toggleCredit('N')">
+              <span class="icon">🌿</span> Crédito N
+            </div>
+            <div class="toggle-btn active" id="btnS" onclick="toggleCredit('S')">
+              <span class="icon">🟡</span> Crédito S
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRECIOS -->
+  <div class="panel">
+    <div class="panel-header"><span class="dot"></span>Fuentes fosforadas — Composición y precios</div>
+    <div class="panel-body" style="padding:0">
+      <div class="fert-table-wrap">
+        <table class="fert-table">
+          <thead>
+            <tr>
+              <th style="text-align:left; padding-left:18px">Fertilizante</th>
+              <th>P₂O₅ %</th>
+              <th>N %</th>
+              <th>S %</th>
+              <th>Ca %</th>
+              <th>Zn %</th>
+              <th>U$S / tn</th>
+              <th>Activo</th>
+            </tr>
+          </thead>
+          <tbody id="fertTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="summary-cards" id="summaryCards"></div>
+
+  <!-- GRÁFICO + TABLA -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-header"><span class="dot"></span>Costo comparado (U$S/ha)</div>
+      <div class="panel-body">
+        <div class="chart-container"><canvas id="myChart"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="dot"></span>Tabla de resultados</div>
+      <div class="panel-body" style="padding:0; overflow-x:auto">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Fertilizante</th>
+              <th>kg/ha</th>
+              <th>kg P</th>
+              <th>kg N</th>
+              <th>kg S</th>
+              <th>U$S/ha</th>
+              <th>vs MAP</th>
+            </tr>
+          </thead>
+          <tbody id="resultsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>SOS Agro · Herramienta de análisis agronómico · Los créditos por N y S descuentan el costo equivalente en Urea y Azufertil respectivamente</footer>
+
+<script>
+// ──────────────────────────────────────────────────────────
+// DATA
+// ──────────────────────────────────────────────────────────
+const P2O5_TO_P = (2 * 30.974) / (2 * 30.974 + 5 * 15.999); // ≈ 0.4364
+
+const FERTILIZERS = [
+  { id: 0,  name: 'MAP',                p2o5: 52,   n: 11,  s: 0,   ca: 0, zn: 0, price: 950,  active: true },
+  { id: 2,  name: 'DAP',                p2o5: 46,   n: 18,  s: 0,   ca: 0, zn: 0, price: null, active: true },
+  { id: 11, name: 'SPT',                p2o5: 46,   n: 0,   s: 0,   ca: 0, zn: 0, price: 800,  active: true },
+  { id: 10, name: 'SPS',                p2o5: 21,   n: 0,   s: 12,  ca: 0, zn: 0, price: 425,  active: true },
+  { id: 5,  name: 'Mezcla 7/40',        p2o5: 39.6, n: 6.6, s: 4.8, ca: 0, zn: 0, price: 735,  active: true },
+  { id: 3,  name: 'MicroEssentials SZ', p2o5: 40,   n: 12,  s: 10,  ca: 0, zn: 1, price: 985,  active: true },
+  { id: 4,  name: 'MicroEssentials S9', p2o5: 46,   n: 10,  s: 9,   ca: 0, zn: 0, price: 965,  active: true },
+  { id: 6,  name: 'Microstar',          p2o5: 40,   n: 10,  s: 11,  ca: 0, zn: 2, price: null, active: true },
+  { id: 7,  name: 'Surcostar',          p2o5: 37,   n: 10,  s: 4.4, ca: 0, zn: 2, price: null, active: true },
+  { id: 8,  name: 'Nutrimax',           p2o5: 38,   n: 7,   s: 5,   ca: 0, zn: 0.8, price: 790, active: true },
+];
+
+let credits = { N: true, S: true };
+let chartInstance = null;
+
+// ──────────────────────────────────────────────────────────
+// RENDER FERTILIZER TABLE
+// ──────────────────────────────────────────────────────────
+function renderFertTable() {
+  const tbody = document.getElementById('fertTable');
+  tbody.innerHTML = '';
+  FERTILIZERS.forEach(f => {
+    const isRef = f.id === 0;
+    const tr = document.createElement('tr');
+    if (!f.active) tr.classList.add('inactive');
+    tr.innerHTML = `
+      <td style="padding-left:18px">
+        <span class="fert-name${isRef ? ' ref-tag' : ''}">${f.name}</span>
+      </td>
+      <td>${f.p2o5}</td>
+      <td>${f.n > 0 ? `<span class="badge badge-n">${f.n}</span>` : '<span class="badge-zero">—</span>'}</td>
+      <td>${f.s > 0 ? `<span class="badge badge-s">${f.s}</span>` : '<span class="badge-zero">—</span>'}</td>
+      <td>${f.ca > 0 ? `<span class="badge badge-ca">${f.ca}</span>` : '<span class="badge-zero">—</span>'}</td>
+      <td>${f.zn > 0 ? `<span class="badge badge-zn">${f.zn}</span>` : '<span class="badge-zero">—</span>'}</td>
+      <td>
+        <input class="price-input${f.price === null ? ' no-price' : ''}"
+          type="number" min="0" step="10"
+          value="${f.price !== null ? f.price : ''}"
+          placeholder="— ?"
+          data-id="${f.id}"
+          onchange="updatePrice(${f.id}, this.value)"
+          oninput="updatePrice(${f.id}, this.value)">
+      </td>
+      <td class="chk-cell">
+        <label class="switch">
+          <input type="checkbox" ${f.active ? 'checked' : ''} onchange="toggleFert(${f.id}, this.checked)">
+          <span class="slider"></span>
+        </label>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updatePrice(id, val) {
+  const f = FERTILIZERS.find(x => x.id === id);
+  const n = parseFloat(val);
+  f.price = isNaN(n) || val === '' ? null : n;
+  // update input style
+  const inp = document.querySelector(`.price-input[data-id="${id}"]`);
+  if (inp) {
+    inp.classList.toggle('no-price', f.price === null);
+  }
+  calculate();
+}
+
+function toggleFert(id, val) {
+  FERTILIZERS.find(x => x.id === id).active = val;
+  renderFertTable();
+  calculate();
+}
+
+// ──────────────────────────────────────────────────────────
+// CALCULATE
+// ──────────────────────────────────────────────────────────
+function calculate() {
+  const refKg       = parseFloat(document.getElementById('refKg').value)       || 100;
+  const ureaPrice   = parseFloat(document.getElementById('ureaPrice').value)   || 590;
+  const azufPrice   = parseFloat(document.getElementById('azufertilPrice').value) || 320;
+
+  const costKgN = ureaPrice   / (1000 * 0.46);   // U$S per kg N
+  const costKgS = azufPrice   / (1000 * 0.186);  // U$S per kg S
+
+  // Reference: MAP (id=0)
+  const refFert = FERTILIZERS[0];
+  const refP_kg = refKg * (refFert.p2o5 / 100) * P2O5_TO_P;   // kg P to match
+
+  const results = [];
+
+  FERTILIZERS.forEach(f => {
+    if (!f.active || f.p2o5 === 0) return;
+
+    const kgNeeded = refP_kg / ((f.p2o5 / 100) * P2O5_TO_P);   // kg to match P
+    const kgP      = kgNeeded * (f.p2o5 / 100) * P2O5_TO_P;
+    const kgN      = kgNeeded * (f.n   / 100);
+    const kgS      = kgNeeded * (f.s   / 100);
+    const kgZn     = kgNeeded * (f.zn  / 100);
+
+    let costBase = null, costNet = null, creditN = 0, creditS = 0;
+    if (f.price !== null) {
+      costBase = kgNeeded * f.price / 1000;
+      if (credits.N) creditN = kgN * costKgN;
+      if (credits.S) creditS = kgS * costKgS;
+      costNet  = costBase - creditN - creditS;
+    }
+
+    results.push({ f, kgNeeded, kgP, kgN, kgS, kgZn, costBase, costNet, creditN, creditS });
+  });
+
+  // Reference cost
+  const refResult = results.find(r => r.f.id === 0);
+  const refCostNet = refResult ? refResult.costNet : null;
+
+  // Sort by net cost (nulls last)
+  const sorted = [...results].sort((a, b) => {
+    if (a.costNet === null && b.costNet === null) return 0;
+    if (a.costNet === null) return 1;
+    if (b.costNet === null) return -1;
+    return a.costNet - b.costNet;
+  });
+
+  renderChart(sorted, refCostNet);
+  renderResults(sorted, refCostNet);
+  renderSummary(sorted, refCostNet, refKg, refP_kg);
+  updateModeDisplay();
+}
+
+// ──────────────────────────────────────────────────────────
+// CHART
+// ──────────────────────────────────────────────────────────
+function renderChart(sorted, refCostNet) {
+  const withPrice = sorted.filter(r => r.costNet !== null);
+  const labels    = withPrice.map(r => r.f.name);
+  const netCosts  = withPrice.map(r => r.costNet);
+  const creditNs  = withPrice.map(r => r.creditN);
+  const creditSs  = withPrice.map(r => r.creditS);
+
+  const barColors = withPrice.map(r => {
+    if (r.f.id === 0) return '#2d7d46';
+    return r.costNet < (refCostNet || Infinity) ? '#3aaa5c' : '#c0392b';
+  });
+
+  const ctx = document.getElementById('myChart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Costo neto',
+          data: netCosts,
+          backgroundColor: barColors,
+          borderRadius: 4,
+          borderSkipped: false,
+        },
+        {
+          label: 'Crédito N',
+          data: creditNs,
+          backgroundColor: 'rgba(26,111,163,0.25)',
+          borderRadius: 4,
+          borderSkipped: false,
+        },
+        {
+          label: 'Crédito S',
+          data: creditSs,
+          backgroundColor: 'rgba(154,125,10,0.22)',
+          borderRadius: 4,
+          borderSkipped: false,
+        },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'IBM Plex Sans', size: 11 }, padding: 14, boxWidth: 12 }
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const r = withPrice[ctx.dataIndex];
+              if (ctx.datasetIndex === 0) return ` Neto: U$S ${ctx.raw.toFixed(2)}/ha`;
+              if (ctx.datasetIndex === 1) return ` Crédito N: U$S ${ctx.raw.toFixed(2)}/ha`;
+              if (ctx.datasetIndex === 2) return ` Crédito S: U$S ${ctx.raw.toFixed(2)}/ha`;
+            },
+            afterBody: (items) => {
+              const r = withPrice[items[0].dataIndex];
+              return [
+                `─────────────────`,
+                `kg/ha: ${r.kgNeeded.toFixed(1)}`,
+                `kg P:  ${r.kgP.toFixed(2)}`,
+                `kg N:  ${r.kgN.toFixed(2)}`,
+                `kg S:  ${r.kgS.toFixed(2)}`,
+              ];
+            }
+          },
+          bodyFont: { family: 'IBM Plex Mono', size: 12 },
+          titleFont: { family: 'IBM Plex Sans', size: 12, weight: '600' },
+          backgroundColor: '#1a2420',
+          padding: 12,
+        },
+        annotation: refCostNet ? {
+          annotations: {
+            refLine: {
+              type: 'line',
+              xMin: refCostNet,
+              xMax: refCostNet,
+              borderColor: '#2d7d46',
+              borderWidth: 1.5,
+              borderDash: [5, 4],
+            }
+          }
+        } : {}
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { color: '#e8f0eb' },
+          ticks: { font: { family: 'IBM Plex Mono', size: 11 }, callback: v => `$${v.toFixed(0)}` },
+          title: { display: true, text: 'U$S / ha', font: { family: 'IBM Plex Sans', size: 11 }, color: '#7a9488' }
+        },
+        y: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { font: { family: 'IBM Plex Sans', size: 11 } }
+        }
+      }
+    }
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// RESULTS TABLE
+// ──────────────────────────────────────────────────────────
+function renderResults(sorted, refCostNet) {
+  const tbody = document.getElementById('resultsTable');
+  tbody.innerHTML = '';
+
+  let rankCounter = 0;
+  sorted.forEach(r => {
+    const isRef = r.f.id === 0;
+    const tr = document.createElement('tr');
+    if (isRef) tr.classList.add('ref-row');
+
+    let rankBadge = '';
+    if (r.costNet !== null) {
+      rankCounter++;
+      const cls = rankCounter <= 3 ? `rank-${rankCounter}` : '';
+      rankBadge = `<span class="rank-badge ${cls}">${rankCounter}</span>`;
+    }
+
+    let costCell = '<span class="no-data">sin precio</span>';
+    let diffCell = '<span class="no-data">—</span>';
+    if (r.costNet !== null) {
+      const diff = refCostNet !== null ? r.costNet - refCostNet : null;
+      const cls = isRef ? 'cost-equal' : r.costNet < refCostNet ? 'cost-cheaper' : 'cost-pricier';
+      costCell = `<span class="${cls}">U$S ${r.costNet.toFixed(2)}</span>`;
+      if (diff !== null && !isRef) {
+        const diffCls = diff < -0.005 ? 'diff-negative' : diff > 0.005 ? 'diff-positive' : 'diff-zero';
+        const sign = diff > 0 ? '+' : '';
+        diffCell = `<span class="${diffCls}">${sign}${diff.toFixed(2)}</span>`;
+      } else if (isRef) {
+        diffCell = '<span class="diff-zero">—</span>';
+      }
+    }
+
+    tr.innerHTML = `
+      <td>${rankBadge}<strong>${r.f.name}</strong></td>
+      <td>${r.kgNeeded.toFixed(1)}</td>
+      <td>${r.kgP.toFixed(2)}</td>
+      <td>${r.kgN > 0 ? r.kgN.toFixed(2) : '—'}</td>
+      <td>${r.kgS > 0 ? r.kgS.toFixed(2) : '—'}</td>
+      <td>${costCell}</td>
+      <td>${diffCell}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// SUMMARY CARDS
+// ──────────────────────────────────────────────────────────
+function renderSummary(sorted, refCostNet, refKg, refPkg) {
+  const container = document.getElementById('summaryCards');
+
+  const withPrice = sorted.filter(r => r.costNet !== null);
+  const cheaper   = withPrice.filter(r => r.f.id !== 0 && r.costNet < refCostNet);
+  const best      = withPrice.find(r => r.f.id !== 0);
+
+  container.innerHTML = `
+    <div class="scard">
+      <div class="scard-label">Referencia</div>
+      <div class="scard-value">${refKg} kg MAP</div>
+      <div class="scard-sub">${refPkg.toFixed(2)} kg P aportados · U$S ${refCostNet !== null ? refCostNet.toFixed(2) : '?'}/ha</div>
+    </div>
+    <div class="scard ${best && best.costNet < refCostNet ? '' : 'orange'}">
+      <div class="scard-label">Opción más económica</div>
+      <div class="scard-value">${best ? best.f.name : '—'}</div>
+      <div class="scard-sub">${best ? `U$S ${best.costNet.toFixed(2)}/ha · ${best.kgNeeded.toFixed(1)} kg/ha` : 'sin datos'}</div>
+    </div>
+    <div class="scard ${cheaper.length > 0 ? '' : 'red'}">
+      <div class="scard-label">Alternativas más baratas</div>
+      <div class="scard-value">${cheaper.length}</div>
+      <div class="scard-sub">fuentes con menor costo que MAP</div>
+    </div>
+    <div class="scard orange">
+      <div class="scard-label">kg P de referencia</div>
+      <div class="scard-value">${refPkg.toFixed(2)}</div>
+      <div class="scard-sub">kg P / ha a igualar</div>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────────
+// TOGGLES
+// ──────────────────────────────────────────────────────────
+function toggleCredit(type) {
+  credits[type] = !credits[type];
+  document.getElementById(`btn${type}`).classList.toggle('active', credits[type]);
+  calculate();
+}
+
+function updateModeDisplay() {
+  const parts = [];
+  if (credits.N) parts.push('Crédito N');
+  if (credits.S) parts.push('Crédito S');
+  const el = document.getElementById('modeDisplay');
+  el.innerHTML = parts.map(p => `<span class="mode-label">${p}</span>`).join('&nbsp;');
+}
+
+// ──────────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────────
+function init() {
+  renderFertTable();
+  calculate();
+
+  ['refKg', 'ureaPrice', 'azufertilPrice'].forEach(id => {
+    document.getElementById(id).addEventListener('input', calculate);
+  });
+}
+
+init();
+</script>
+</body>
+</html>
